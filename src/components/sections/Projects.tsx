@@ -182,7 +182,7 @@ const projects = [
     description: "Aplicación web Fullstack enfocada en el proceso de diseño de vestuario",
     image: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=2670&auto=format&fit=crop",
     techStack: ["React", "Next.js", "Django", "PostgreSQL"],
-    githubUrl: "https://github.com/DesignBetterFrontend",
+    githubUrl: "https://github.com/Ultimate-Truth-Seeker/DesignBetterFrontend",
     liveUrl: "",
   },
   {
