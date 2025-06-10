@@ -1,9 +1,10 @@
 import styled from '@emotion/styled';
 import { motion } from 'framer-motion';
-import { ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { theme } from '../../styles/theme';
 import { FloatingNav } from '../navigation/FloatingNav';
 import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
+import ParticlesBackground from './ParticlesBackground';
 
 interface LayoutProps {
   children: ReactNode;
@@ -175,6 +176,7 @@ export const Layout = ({ children }: LayoutProps) => {
 
   return (
     <LayoutWrapper>
+      <ParticlesBackground/>
       <SkipLink href="#main-content">
         Skip to main content
       </SkipLink>

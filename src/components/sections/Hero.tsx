@@ -2,6 +2,7 @@ import styled from '@emotion/styled';
 import { theme } from '../../styles/theme';
 import { keyframes } from '@emotion/react';
 import { lazy, Suspense } from 'react';
+import HeroExperience from './HeroExperience';
 const FaGithub = lazy(() => import('react-icons/fa').then(mod => ({ default: mod.FaGithub })));
 const FaLinkedin = lazy(() => import('react-icons/fa').then(mod => ({ default: mod.FaLinkedin })));
 const FaEnvelope = lazy(() => import('react-icons/fa').then(mod => ({ default: mod.FaEnvelope })));
@@ -45,6 +46,13 @@ const HeroContent = styled.div`
     padding: ${theme.spacing.xl};
   }
 `;
+
+// Add this near your other styled components:
+const HeroExperienceWrapper = styled.div`
+  height: 400px; // <-- Set your desired height
+  width: 100%; 
+`;
+
 
 const fadeUpKeyframes = keyframes`
   from {
@@ -136,6 +144,13 @@ export const Hero = () => {
               Me dedico a buscar en soluciones elegantes para problemas complejos, especializandome en 
               desarrollo web moderno con enfoque en la experiencia del usuario y código impecable. 
             </Description>
+            <figure>
+            <HeroExperienceWrapper>
+              
+                <HeroExperience/>
+              
+            </HeroExperienceWrapper>
+            </figure>
             <SocialLinks role="list" aria-label="Social media links">
               <a 
                 href="https://github.com/Ultimate-Truth-Seeker" 

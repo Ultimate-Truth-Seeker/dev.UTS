@@ -183,7 +183,7 @@ const projects = [
     image: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=2670&auto=format&fit=crop",
     techStack: ["React", "Next.js", "Django", "PostgreSQL"],
     githubUrl: "https://github.com/DesignBetterFrontend",
-    //liveUrl: "https://example.com",
+    liveUrl: "",
   },
   {
     id: 2,
@@ -192,7 +192,16 @@ const projects = [
     image: "https://upload.wikimedia.org/wikipedia/commons/7/7d/Android-robot-googleplex-2008.jpg",
     techStack: ["Kotlin Compose", "Firebase", "Material 3", "Firebase Firestore"],
     githubUrl: "https://github.com/Ultimate-Truth-Seeker/MarketplaceAndroid",
-    //liveUrl: "https://example.com",
+    liveUrl: "",
+  },
+  {
+    id: 3,
+    title: "Calculadora Vite",
+    description: "Calculadora realizada en Vite, con tests y storybook",
+    image: "/dev.UTS/icon.svg",
+    techStack: ["React", "Vite", "StoryBook", "Vitest"],
+    githubUrl: "https://github.com/Ultimate-Truth-Seeker/CalculadoraReact",
+    liveUrl: "https://calicheoficial.lat/23781/dist/",
   },
 ];
 
