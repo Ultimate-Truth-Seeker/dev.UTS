@@ -1,10 +1,25 @@
 import styled from '@emotion/styled';
 import { motion } from 'framer-motion';
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode, memo, useEffect } from 'react';
 import { theme } from '../../styles/theme';
 import { FloatingNav } from '../navigation/FloatingNav';
 import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
 import ParticlesBackground from './ParticlesBackground';
+
+// ParticlesBackground builds a new `options` object on every render and tsparticles restarts when it changes,
+// so it must never re-render with the page (language, lab tab, laptop preview...). memo() guarantees that
+// without touching the component itself.
+const StaticParticles = memo(ParticlesBackground);
+
+// A viewport-sized layer instead of a page-sized one: the canvas used to be 8,000-16,000 px tall (taller in
+// Spanish and on narrow widths), which spawned ~750 particles whose link checks grow quadratically.
+const ParticlesLayer = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+`;
 import { useLang } from '../../i18n/context';
 import { useUI } from '../../context/ui';
 import { LangToggle } from '../ui/LangToggle';
@@ -237,7 +252,9 @@ export const Layout = ({ children }: LayoutProps) => {
 
   return (
     <LayoutWrapper>
-      <ParticlesBackground/>
+      <ParticlesLayer aria-hidden="true">
+        <StaticParticles />
+      </ParticlesLayer>
       <SkipLink href="#main-content">
         {t(ui.skip)}
       </SkipLink>

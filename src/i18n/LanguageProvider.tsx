@@ -56,6 +56,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const meta = META[lang];
     document.documentElement.lang = lang;
+    document.documentElement.translate = false; // the site is natively bilingual; browser auto-translate re-processes live demo text
     document.title = meta.title;
     setMeta('meta[name="description"]', 'content', meta.description);
     setMeta('meta[property="og:title"]', 'content', meta.title);
