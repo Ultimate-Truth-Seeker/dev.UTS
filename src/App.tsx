@@ -1,52 +1,42 @@
 import { lazy, Suspense } from 'react';
+import { ThemeProvider } from '@emotion/react';
 import { Layout } from './components/layout/Layout';
 import { Hero } from './components/sections/Hero';
 import { GlobalStyles } from './styles/GlobalStyles';
-import { ThemeProvider } from '@emotion/react';
 import { theme } from './styles/theme';
-import styled from '@emotion/styled';
+import { LanguageProvider } from './i18n/LanguageProvider';
+import { UIProvider } from './context/UIProvider';
 
-// Lazy load non-critical components
+// Everything below the fold is split out so the hero (LCP) loads first.
+const About = lazy(() => import('./components/sections/About'));
 const Projects = lazy(() => import('./components/sections/Projects'));
+const Playground = lazy(() => import('./components/sections/Playground'));
+const Experience = lazy(() => import('./components/sections/Experience'));
 const Skills = lazy(() => import('./components/sections/Skills'));
 const Contact = lazy(() => import('./components/sections/Contact'));
-
-// Loading fallback component
-const LoadingFallback = styled.div`
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${theme.colors.glass.background};
-  backdrop-filter: blur(8px);
-  color: ${theme.colors.accent};
-  font-size: 1.2rem;
-  
-  @media print {
-    display: none;
-  }
-`;
+const ProjectModal = lazy(() => import('./components/sections/ProjectModal'));
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <GlobalStyles />
-      <Layout>
-        {/* Hero section is critical for LCP, so keep it eager loaded */}
-        <Hero />
-        
-        {/* Wrap non-critical sections in Suspense */}
-        <Suspense fallback={<LoadingFallback>Loading projects...</LoadingFallback>}>
-          <Projects />
-        </Suspense>
-        <Suspense fallback={<LoadingFallback>Loading skills...</LoadingFallback>}>
-          <Skills />
-        </Suspense>
-        <Suspense fallback={<LoadingFallback>Loading contact...</LoadingFallback>}>
-          <Contact />
-        </Suspense>
-      </Layout>
-    </ThemeProvider>
+    <LanguageProvider>
+      <UIProvider>
+        <ThemeProvider theme={theme}>
+          <GlobalStyles />
+          <Layout>
+            <Hero />
+            <Suspense fallback={null}>
+              <About />
+              <Projects />
+              <Playground />
+              <Experience />
+              <Skills />
+              <Contact />
+              <ProjectModal />
+            </Suspense>
+          </Layout>
+        </ThemeProvider>
+      </UIProvider>
+    </LanguageProvider>
   );
 }
 

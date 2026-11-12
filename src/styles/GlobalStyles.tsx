@@ -2,8 +2,6 @@ import { Global, css } from '@emotion/react';
 import { theme } from './theme';
 
 const globalStyles = css`
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap');
-
   *, *::before, *::after {
     margin: 0;
     padding: 0;
@@ -12,6 +10,7 @@ const globalStyles = css`
 
   html {
     scroll-behavior: smooth;
+    scroll-padding-top: 4.5rem;
     font-size: 16px;
     overflow-x: hidden;
     width: 100%;
@@ -84,6 +83,16 @@ const globalStyles = css`
   @media (max-width: ${theme.breakpoints.sm}) {
     html {
       font-size: 14px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
     }
   }
 

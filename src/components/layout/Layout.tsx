@@ -5,6 +5,12 @@ import { theme } from '../../styles/theme';
 import { FloatingNav } from '../navigation/FloatingNav';
 import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
 import ParticlesBackground from './ParticlesBackground';
+import { useLang } from '../../i18n/context';
+import { useUI } from '../../context/ui';
+import { LangToggle } from '../ui/LangToggle';
+import { sectionList } from '../../data/sections';
+import { ui } from '../../data/content';
+import { CommandPalette } from '../navigation/CommandPalette';
 
 interface LayoutProps {
   children: ReactNode;
@@ -97,16 +103,22 @@ const Logo = styled(motion.div)`
   font-family: ${theme.fonts.heading};
   font-size: 1.5rem;
   font-weight: 700;
+  white-space: nowrap;
+  @media (max-width: 480px) {
+    font-size: 1.15rem;
+  }
 `;
 
 const NavLinks = styled.div`
   display: flex;
-  gap: ${theme.spacing.lg};
+  align-items: center;
+  gap: ${theme.spacing.md};
 
-  a {
+  a.nav-link {
     color: ${theme.colors.textLight};
     transition: all ${theme.transitions.default};
     font-weight: 500;
+    font-size: 0.95rem;
     padding: ${theme.spacing.xs} ${theme.spacing.sm};
     border-radius: 4px;
 
@@ -116,8 +128,52 @@ const NavLinks = styled.div`
     }
   }
 
-  @media (max-width: ${theme.breakpoints.sm}) {
-    gap: ${theme.spacing.md};
+  @media (max-width: 900px) {
+    a.nav-link {
+      display: none;
+    }
+  }
+`;
+
+const PaletteButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: ${theme.colors.textLight};
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  background: rgba(0, 0, 0, 0.2);
+
+  kbd {
+    font-family: inherit;
+    font-size: 0.7rem;
+    opacity: 0.7;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    padding: 0 0.3rem;
+  }
+
+  .short {
+    display: none;
+  }
+  @media (max-width: 640px) {
+    .full {
+      display: none;
+    }
+    .short {
+      display: inline;
+    }
+  }
+
+  &:hover {
+    border-color: ${theme.colors.accent};
+    color: ${theme.colors.light};
+  }
+  &:focus-visible {
+    outline: 2px solid ${theme.colors.accent};
+    outline-offset: 2px;
   }
 `;
 
@@ -161,54 +217,67 @@ const Footer = styled.footer`
   }
 `;
 
+const isMac = typeof navigator !== 'undefined' && /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent);
+
 export const Layout = ({ children }: LayoutProps) => {
   useKeyboardNavigation();
+  const { t } = useLang();
+  const { setPaletteOpen } = useUI();
 
   useEffect(() => {
-    // Add keyboard navigation instructions to console
-    console.info(
-      'Keyboard Navigation:\n',
-      '- Arrow Up/Down or PageUp/PageDown: Navigate between sections\n',
-      '- Home: Go to top\n',
-      '- End: Go to bottom'
-    );
-  }, []);
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [setPaletteOpen]);
 
   return (
     <LayoutWrapper>
       <ParticlesBackground/>
       <SkipLink href="#main-content">
-        Skip to main content
+        {t(ui.skip)}
       </SkipLink>
 
-      <Header role="banner">
-        <Nav role="navigation" aria-label="Main navigation">
+      <Header>
+        <Nav aria-label="Main">
           <div className="container">
             <Logo
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
-              role="heading"
-              aria-level={1}
             >
-              Portafolio
+              <a href="#hero">{ui.brand}</a>
             </Logo>
-            <NavLinks role="list">
-              <a href="#about" role="listitem" aria-label="About section">Acerca de</a>
-              <a href="#projects" role="listitem" aria-label="Projects section">Proyectos</a>
-              <a href="#skills" role="listitem" aria-label="Skills section">Habilidades</a>
-              <a href="#contact" role="listitem" aria-label="Contact section">Contacto</a>
+            <NavLinks>
+              {sectionList
+                .filter((sec) => sec.id !== 'hero')
+                .map((sec) => (
+                  <a key={sec.id} className="nav-link" href={`#${sec.id}`}>
+                    {t(sec.label)}
+                  </a>
+                ))}
+              <PaletteButton type="button" onClick={() => setPaletteOpen(true)} aria-haspopup="dialog">
+                <span className="full">{t(ui.paletteHint)}</span>
+                <kbd className="full">{isMac ? '⌘K' : 'Ctrl K'}</kbd>
+                <span className="short">{t(ui.menu)}</span>
+              </PaletteButton>
+              <LangToggle />
             </NavLinks>
           </div>
         </Nav>
       </Header>
-      <Main id="main-content" role="main" tabIndex={-1}>
+      <Main id="main-content" tabIndex={-1}>
         {children}
       </Main>
       <FloatingNav />
-      <Footer role="contentinfo">
+      <CommandPalette />
+      <Footer>
         <div className="container">
-          <p>© {new Date().getFullYear()} Roberto Nájera. Derechos reservados.</p>
+          <p>© {new Date().getFullYear()} Roberto Nájera. {t(ui.footerRights)} · {t(ui.footerBuilt)}</p>
         </div>
       </Footer>
     </LayoutWrapper>

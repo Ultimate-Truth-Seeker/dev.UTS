@@ -1,46 +1,52 @@
 import { useEffect } from 'react';
+import { sectionList } from '../data/sections';
 
-const sections = ['hero', 'projects', 'skills', 'contact'];
+const ids = sectionList.map((s) => s.id);
 
+const isTypingTarget = (t: EventTarget | null): boolean =>
+  t instanceof HTMLInputElement ||
+  t instanceof HTMLTextAreaElement ||
+  t instanceof HTMLSelectElement ||
+  (t instanceof HTMLElement && (t.isContentEditable || t.closest('[role="dialog"]') !== null));
+
+/**
+ * Section-to-section keyboard navigation. Only PageUp/PageDown are captured: the arrow keys keep
+ * their normal scrolling behaviour so the page never feels hijacked. Home/End jump to first/last section.
+ */
 export const useKeyboardNavigation = () => {
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle if not typing in an input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
+    const go = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 
-      const currentSection = sections.find(section => {
-        const element = document.getElementById(section);
-        if (!element) return false;
-        const rect = element.getBoundingClientRect();
-        return rect.top <= window.innerHeight / 2 && rect.bottom >= window.innerHeight / 2;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
+
+      const current = ids.findIndex((id) => {
+        const el = document.getElementById(id);
+        if (!el) return false;
+        const r = el.getBoundingClientRect();
+        return r.top <= window.innerHeight / 2 && r.bottom >= window.innerHeight / 2;
       });
 
-      const currentIndex = currentSection ? sections.indexOf(currentSection) : -1;
-
       switch (e.key) {
-        case 'ArrowDown':
         case 'PageDown':
-          e.preventDefault();
-          if (currentIndex < sections.length - 1) {
-            document.getElementById(sections[currentIndex + 1])?.scrollIntoView({ behavior: 'smooth' });
+          if (current < ids.length - 1) {
+            e.preventDefault();
+            go(ids[current + 1]);
           }
           break;
-        case 'ArrowUp':
         case 'PageUp':
-          e.preventDefault();
-          if (currentIndex > 0) {
-            document.getElementById(sections[currentIndex - 1])?.scrollIntoView({ behavior: 'smooth' });
+          if (current > 0) {
+            e.preventDefault();
+            go(ids[current - 1]);
           }
           break;
         case 'Home':
           e.preventDefault();
-          document.getElementById(sections[0])?.scrollIntoView({ behavior: 'smooth' });
+          go(ids[0]);
           break;
         case 'End':
           e.preventDefault();
-          document.getElementById(sections[sections.length - 1])?.scrollIntoView({ behavior: 'smooth' });
+          go(ids[ids.length - 1]);
           break;
       }
     };

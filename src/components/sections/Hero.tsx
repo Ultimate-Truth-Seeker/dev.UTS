@@ -1,195 +1,307 @@
+import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import styled from '@emotion/styled';
-import { theme } from '../../styles/theme';
 import { keyframes } from '@emotion/react';
-import { lazy, Suspense } from 'react';
-import HeroExperience from './HeroExperience';
-const FaGithub = lazy(() => import('react-icons/fa').then(mod => ({ default: mod.FaGithub })));
-const FaLinkedin = lazy(() => import('react-icons/fa').then(mod => ({ default: mod.FaLinkedin })));
-const FaEnvelope = lazy(() => import('react-icons/fa').then(mod => ({ default: mod.FaEnvelope })));
+import { FaEnvelope, FaGithub, FaLinkedin } from 'react-icons/fa';
+import { useLang } from '../../i18n/context';
+import { useUI } from '../../context/ui';
+import { hero } from '../../data/content';
+import { categoryColor, featuredProjects, projectById, projects } from '../../data/projects';
+import { siteConfig } from '../../config';
+import { theme } from '../../styles/theme';
+import { GhostButton, PrimaryButton } from '../ui/primitives';
+import { useScreenTexture } from './useScreenTexture';
+
+const LaptopScene = lazy(() => import('./LaptopScene'));
+
+const fadeUp = keyframes`
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
 
 const HeroSection = styled.section`
   min-height: calc(100vh - 4.5rem);
   display: flex;
   align-items: center;
-  position: relative;
-  overflow: hidden;
-  color: ${theme.colors.textLight};
   padding: ${theme.spacing.lg} 0;
+  color: ${theme.colors.textLight};
+  scroll-margin-top: 4.5rem;
+`;
 
-  @media (min-width: ${theme.breakpoints.md}) {
-    padding: ${theme.spacing.xl} 0;
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: ${theme.spacing.lg};
+  align-items: center;
+  background: rgba(42, 45, 62, 0.5);
+  border-radius: 20px;
+  padding: ${theme.spacing.lg};
+
+  @media (max-width: 960px) {
+    grid-template-columns: minmax(0, 1fr);
+    padding: ${theme.spacing.md};
   }
+`;
 
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    width: 95%;
-    
-    @media (min-width: ${theme.breakpoints.sm}) {
-      width: 90%;
+const Copy = styled.div`
+  animation: ${fadeUp} 0.5s ease-out both;
+  display: grid;
+  gap: 1rem;
+  .hi {
+    color: ${theme.colors.textLight};
+    opacity: 0.8;
+    font-size: 1.1rem;
+  }
+  h1 {
+    font-size: clamp(2.2rem, 5.5vw, 4rem);
+    color: ${theme.colors.light};
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+  .role {
+    font-family: ${theme.fonts.heading};
+    font-weight: 500;
+    font-size: clamp(1.05rem, 2vw, 1.35rem);
+    opacity: 0.95;
+  }
+  .blurb {
+    opacity: 0.82;
+    max-width: 56ch;
+  }
+  .avail {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.88rem;
+    opacity: 0.9;
+    &::before {
+      content: '';
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      background: #3ddc84;
+      box-shadow: 0 0 0 4px rgba(61, 220, 132, 0.2);
     }
   }
 `;
 
-const HeroContent = styled.div`
-  position: relative;
-  z-index: 1;
-  max-width: 1000px;
-  width: 100%;
-  background: ${theme.colors.glass.background};
-  backdrop-filter: blur(8px);
-  border-radius: 20px;
-  padding: ${theme.spacing.lg};
-  border: none;
-
-  @media (min-width: ${theme.breakpoints.md}) {
-    padding: ${theme.spacing.xl};
-  }
-`;
-
-// Add this near your other styled components:
-const HeroExperienceWrapper = styled.div`
-  height: 400px; // <-- Set your desired height
-  width: 100%; 
-`;
-
-
-const fadeUpKeyframes = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-`;
-
-const Title = styled.h1`
-  animation: ${fadeUpKeyframes} 0.5s ease-out forwards;
-  font-size: clamp(2.5rem, 6vw, 4.5rem);
-  margin-bottom: ${theme.spacing.md};
-  color: ${theme.colors.light};
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-`;
-
-const Subtitle = styled.h2`
-  animation: ${fadeUpKeyframes} 0.5s ease-out 0.2s forwards;
-  opacity: 0;
-  font-size: clamp(1.5rem, 3vw, 2.25rem);
-  margin-bottom: ${theme.spacing.lg};
-  opacity: 0.9;
-  font-weight: 500;
-`;
-
-const Description = styled.p`
-  animation: ${fadeUpKeyframes} 0.5s ease-out 0.4s forwards;
-  opacity: 0;
-  font-size: clamp(1rem, 1.2vw, 1.2rem);
-  max-width: 600px;
-  margin-bottom: ${theme.spacing.xl};
-  opacity: 0.8;
-  line-height: 1.7;
-`;
-
-const SocialLinks = styled.div`
-  animation: ${fadeUpKeyframes} 0.5s ease-out 0.6s forwards;
-  opacity: 0;
+const Row = styled.div`
   display: flex;
-  gap: ${theme.spacing.md};
-  
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  align-items: center;
+`;
+
+const Stats = styled.dl`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem 2rem;
+  div {
+    min-width: 8rem;
+  }
+  dt {
+    font-family: ${theme.fonts.heading};
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: ${theme.colors.light};
+  }
+  dd {
+    margin: 0;
+    font-size: 0.8rem;
+    opacity: 0.75;
+    max-width: 14ch;
+  }
+`;
+
+const Social = styled.div`
+  display: flex;
+  gap: 0.6rem;
   a {
-    color: ${theme.colors.textLight};
-    font-size: 1.5rem;
-    transition: all ${theme.transitions.default};
-    padding: ${theme.spacing.xs};
+    width: 2.4rem;
+    height: 2.4rem;
+    display: grid;
+    place-items: center;
+    font-size: 1.2rem;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     background: ${theme.colors.glass.background};
-    
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: all ${theme.transitions.default};
     &:hover {
       color: ${theme.colors.light};
       transform: translateY(-3px);
-      background: ${theme.colors.glass.card};
-      box-shadow: 0 4px 12px rgba(246, 177, 122, 0.2);
     }
-  }
-
-  @media (min-width: ${theme.breakpoints.md}) {
-    gap: ${theme.spacing.lg};
-    
-    a {
-      font-size: 1.75rem;
+    &:focus-visible {
+      outline: 2px solid ${theme.colors.accent};
+      outline-offset: 2px;
     }
   }
 `;
 
-export const Hero = () => {
+const Stage = styled.figure`
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+`;
+
+const SceneBox = styled.div`
+  height: clamp(280px, 38vw, 420px);
+  width: 100%;
+  position: relative;
+  cursor: grab;
+  &:active {
+    cursor: grabbing;
+  }
+`;
+
+const Placeholder = styled.div`
+  height: 100%;
+  display: grid;
+  place-items: center;
+  opacity: 0.6;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1rem;
+`;
+
+const Chips = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: center;
+`;
+
+const ProjChip = styled.button<{ current: boolean; tint: string }>`
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: ${theme.colors.textLight};
+  background: ${(p) => (p.current ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.05)')};
+  border: 1px solid ${(p) => (p.current ? p.tint : 'rgba(255,255,255,0.18)')};
+  transition: all 0.2s ease;
+  &:hover,
+  &:focus-visible {
+    border-color: ${(p) => p.tint};
+    background: rgba(255, 255, 255, 0.14);
+    outline: none;
+  }
+`;
+
+const Caption = styled.figcaption`
+  text-align: center;
+  font-size: 0.78rem;
+  opacity: 0.6;
+`;
+
+class SceneBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
+const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+export function Hero() {
+  const { t, lang } = useLang();
+  const { goTo, openProject, previewProject, setPreviewProject } = useUI();
+  const [auto, setAuto] = useState(0);
+
+  useEffect(() => {
+    if (previewProject || reduceMotion()) return;
+    const id = window.setInterval(() => {
+      if (!document.hidden) setAuto((i) => (i + 1) % featuredProjects.length);
+    }, 5000);
+    return () => window.clearInterval(id);
+  }, [previewProject]);
+
+  const shown = (previewProject && projectById(previewProject)) || featuredProjects[auto] || projects[0];
+  const { texture, version } = useScreenTexture(shown, lang);
+
+  const sceneFallback = <Placeholder>{t({ en: '3D preview unavailable on this device.', es: 'Vista 3D no disponible en este dispositivo.' })}</Placeholder>;
+
   return (
-    <HeroSection id="hero" role="region" aria-label="Introduction">
+    <HeroSection id="hero" aria-label={t({ en: 'Introduction', es: 'Introducción' })}>
       <div className="container">
-        <HeroContent>
-          <div>
-            <Title role="heading" aria-level={2}>
-              Hola, soy Roberto Najera
-            </Title>
-            <Subtitle role="heading" aria-level={3}>
-              Full Stack Developer
-            </Subtitle>
-            <Description role="paragraph">
-              Me dedico a buscar en soluciones elegantes para problemas complejos, especializandome en 
-              desarrollo web moderno con enfoque en la experiencia del usuario y código impecable. 
-            </Description>
-            <figure>
-            <HeroExperienceWrapper>
-              
-                <HeroExperience/>
-              
-            </HeroExperienceWrapper>
-            </figure>
-            <SocialLinks role="list" aria-label="Social media links">
-              <a 
-                href="https://github.com/Ultimate-Truth-Seeker" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                aria-label="Visit my GitHub profile"
-                role="listitem"
+        <Grid>
+          <Copy>
+            <span className="hi">{t(hero.greeting)}</span>
+            <h1>{hero.name}</h1>
+            <p className="role">{t(hero.role)}</p>
+            <p className="blurb">{t(hero.blurb)}</p>
+            <span className="avail">{t(hero.availability)}</span>
+            <Row>
+              <PrimaryButton
+                href="#projects"
+                onClick={(e) => {
+                  e.preventDefault();
+                  goTo('projects');
+                }}
               >
-                <Suspense fallback={<div style={{ width: '1.5rem', height: '1.5rem' }} />}>
+                {t(hero.ctaProjects)}
+              </PrimaryButton>
+              <GhostButton
+                href="#contact"
+                onClick={(e) => {
+                  e.preventDefault();
+                  goTo('contact');
+                }}
+              >
+                {t(hero.ctaContact)}
+              </GhostButton>
+              <Social aria-label="Social">
+                <a href={siteConfig.github} target="_blank" rel="noopener noreferrer" aria-label="GitHub">
                   <FaGithub aria-hidden="true" />
-                </Suspense>
-                <span className="sr-only">GitHub</span>
-              </a>
-              <a 
-                href="https://www.linkedin.com/in/roberto-samuel-najera-marroquin-3249b9263/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                aria-label="Visit my LinkedIn profile"
-                role="listitem"
-              >
-                <Suspense fallback={<div style={{ width: '1.5rem', height: '1.5rem' }} />}>
+                </a>
+                <a href={siteConfig.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
                   <FaLinkedin aria-hidden="true" />
-                </Suspense>
-                <span className="sr-only">LinkedIn</span>
-              </a>
-              <a 
-                href="mailto:robertonajeratics@gmail.com"
-                aria-label="Send me an email"
-                role="listitem"
-              >
-                <Suspense fallback={<div style={{ width: '1.5rem', height: '1.5rem' }} />}>
+                </a>
+                <a href={`mailto:${siteConfig.email}`} aria-label="Email">
                   <FaEnvelope aria-hidden="true" />
+                </a>
+              </Social>
+            </Row>
+            <Stats>
+              {hero.stats.map((s) => (
+                <div key={s.value}>
+                  <dt>{s.value}</dt>
+                  <dd>{t(s.label)}</dd>
+                </div>
+              ))}
+            </Stats>
+          </Copy>
+
+          <Stage>
+            <SceneBox role="img" aria-label={`${t({ en: '3D laptop showing', es: 'Laptop 3D mostrando' })} ${t(shown.title)}`}>
+              <SceneBoundary fallback={sceneFallback}>
+                <Suspense fallback={<Placeholder>…</Placeholder>}>
+                  <LaptopScene texture={texture} version={version} />
                 </Suspense>
-                <span className="sr-only">Email</span>
-              </a>
-            </SocialLinks>
-          </div>
-        </HeroContent>
+              </SceneBoundary>
+            </SceneBox>
+            <Chips role="group" aria-label={t(hero.featuredLabel)}>
+              {featuredProjects.map((p) => (
+                <ProjChip
+                  key={p.id}
+                  type="button"
+                  current={p.id === shown.id}
+                  tint={categoryColor[p.category]}
+                  onMouseEnter={() => setPreviewProject(p.id)}
+                  onMouseLeave={() => setPreviewProject(null)}
+                  onFocus={() => setPreviewProject(p.id)}
+                  onBlur={() => setPreviewProject(null)}
+                  onClick={() => openProject(p.id)}
+                >
+                  {t(p.title)}
+                </ProjChip>
+              ))}
+            </Chips>
+            <Caption>{t(hero.laptopHint)}</Caption>
+          </Stage>
+        </Grid>
       </div>
     </HeroSection>
   );
-};
+}

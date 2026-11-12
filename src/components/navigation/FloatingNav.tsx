@@ -2,16 +2,19 @@ import styled from '@emotion/styled';
 import { motion, useScroll, useSpring } from 'framer-motion';
 import { theme } from '../../styles/theme';
 import { useEffect, useState } from 'react';
+import { sectionList } from '../../data/sections';
+import { useLang } from '../../i18n/context';
+import { ui } from '../../data/content';
 
 const NavContainer = styled(motion.nav)`
   position: fixed;
-  right: ${theme.spacing.xl};
+  right: 0.6rem;
   top: 50%;
   transform: translateY(-50%);
   z-index: 1000;
   background: ${theme.colors.glass.background}80;
   backdrop-filter: blur(10px);
-  padding: ${theme.spacing.lg};
+  padding: ${theme.spacing.md} 0.7rem;
   border-radius: 50px;
   display: flex;
   flex-direction: column;
@@ -24,10 +27,15 @@ const NavContainer = styled(motion.nav)`
     display: none;
   }
 
+  /* On phones the dots would cover the text; the header menu / command palette handles navigation. */
+  @media (max-width: ${theme.breakpoints.md}) {
+    display: none;
+  }
+
   @media (max-width: ${theme.breakpoints.sm}) {
-    right: ${theme.spacing.sm};
-    padding: ${theme.spacing.md};
-    gap: ${theme.spacing.lg};
+    right: 0.25rem;
+    padding: 0.7rem 0.5rem;
+    gap: ${theme.spacing.md};
     background: ${theme.colors.glass.background};
   }
 
@@ -37,7 +45,9 @@ const NavContainer = styled(motion.nav)`
   }
 `;
 
-const NavDot = styled(motion.button)<{ active: boolean }>`
+const NavDot = styled(motion.button, {
+  shouldForwardProp: (prop) => prop !== 'active',
+})<{ active: boolean }>`
   width: 12px;
   height: 12px;
   border-radius: 50%;
@@ -138,96 +148,73 @@ const ProgressBar = styled(motion.div)`
   }
 `;
 
-const sections = [
-  { id: 'hero', name: 'Home' },
-  { id: 'projects', name: 'Projects' },
-  { id: 'skills', name: 'Skills' },
-  { id: 'contact', name: 'Contact' }
-];
 
 export const FloatingNav = () => {
   const [activeSection, setActiveSection] = useState('hero');
+  const { t } = useLang();
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
     damping: 30,
-    restDelta: 0.001
+    restDelta: 0.001,
   });
 
   useEffect(() => {
     const handleScroll = () => {
-      const windowHeight = window.innerHeight;
-      
-      // Find which section is currently in view
-      sections.forEach(({ id, name }) => {
-        const element = document.getElementById(id);
-        if (element) {
-          const { top, bottom } = element.getBoundingClientRect();
-          if (top <= windowHeight / 2 && bottom >= windowHeight / 2) {
-            setActiveSection(id);
-            // Update aria-live region
-            const liveRegion = document.getElementById('section-announcer');
-            if (liveRegion) {
-              liveRegion.textContent = `Current section: ${name}`;
-            }
-          }
+      const mid = window.innerHeight / 2;
+      for (const { id } of sectionList) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        const { top, bottom } = el.getBoundingClientRect();
+        if (top <= mid && bottom >= mid) {
+          setActiveSection((prev) => (prev === id ? prev : id));
+          break;
         }
-      });
+      }
     };
-
-    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    const live = document.getElementById('section-announcer');
+    const current = sectionList.find((s) => s.id === activeSection);
+    if (live && current) live.textContent = `${t(ui.currentSection)}: ${t(current.label)}`;
+  }, [activeSection, t]);
+
+  const go = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 
   const handleKeyDown = (e: React.KeyboardEvent, sectionId: string) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
+      go(sectionId);
     } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault();
-      const currentIndex = sections.findIndex(({ id }) => id === sectionId);
-      const nextIndex = e.key === 'ArrowUp' 
-        ? Math.max(0, currentIndex - 1)
-        : Math.min(sections.length - 1, currentIndex + 1);
-      
-      const nextSection = sections[nextIndex];
-      document.getElementById(nextSection.id)?.scrollIntoView({ behavior: 'smooth' });
+      const currentIndex = sectionList.findIndex(({ id }) => id === sectionId);
+      const nextIndex =
+        e.key === 'ArrowUp' ? Math.max(0, currentIndex - 1) : Math.min(sectionList.length - 1, currentIndex + 1);
+      go(sectionList[nextIndex].id);
     }
   };
 
   return (
     <>
-      <ProgressBar 
-        style={{ scaleX }} 
-        role="progressbar" 
-        aria-label="Reading progress"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(scrollYProgress.get() * 100)}
-      />
-      <div 
-        id="section-announcer" 
-        className="sr-only" 
-        role="status" 
-        aria-live="polite"
-      />
-      <NavContainer
-        role="navigation"
-        aria-label="Section navigation"
-      >
-        {sections.map(({ id, name }) => (
+      <ProgressBar style={{ scaleX }} aria-hidden="true" />
+      <div id="section-announcer" className="sr-only" role="status" aria-live="polite" />
+      <NavContainer aria-label="Sections">
+        {sectionList.map(({ id, label }) => (
           <NavDot
             key={id}
+            type="button"
             active={activeSection === id}
-            onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() => go(id)}
             onKeyDown={(e) => handleKeyDown(e, id)}
-            data-tooltip={name}
-            tabIndex={0}
-            aria-label={`${name} section ${activeSection === id ? '(current section)' : ''}`}
+            data-tooltip={t(label)}
+            aria-label={t(label)}
             aria-current={activeSection === id ? 'true' : undefined}
             whileHover={{ scale: 1.2 }}
             whileTap={{ scale: 0.9 }}
-            role="button"
           />
         ))}
       </NavContainer>
